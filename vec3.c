@@ -8,8 +8,22 @@
 #include <stdio.h>
 #include <arm_neon.h>
 #include <assert.h>
+#include <string.h>
+
+#if _M_ARM64
+#define VC_EXTRALEAN
+#define WIN32_LEAN_AND_MEAN
+
+#include <windows.h>
+#include <synchapi.h>
+
+#define sleep(n)	Sleep(1000 * (n))
+#else
+#include <unistd.h>
+#endif
+
 #if __APPLE__
-	#include <pthread.h>
+#include <pthread.h>
 #endif
 
 typedef struct _matx3 {
@@ -289,6 +303,8 @@ void transfort_x8(const matx4x3* mat, const float* vec, size_t num_vec, float* o
 }
 
 #endif
+uint32_t g_sleep;
+
 #if SMALL_DATA
 float arr[] __attribute__ ((aligned(CACHELINE_SIZE))) = { // used also to debug routines, so init to something
 	 0,  1,  2,
@@ -347,6 +363,9 @@ static void *thread_fn(void *arg)
 	const size_t rep = 1e3;
 
 #endif
+	if (g_sleep)
+		sleep(g_sleep);
+
 	for (size_t i = 0; i < rep; ++i) {
 		__asm __volatile ("" ::: "memory");
 
@@ -376,8 +395,20 @@ static void *thread_fn(void *arg)
 	return NULL;
 }
 
+static char arg_sleep[] = "--sleep";
+
 int main(int argc, char** argv)
 {
+	for (int argi = 1; argi < argc; ++argi) {
+		if (0 == strcmp(arg_sleep, argv[argi]) && ++argi < argc && 1 == sscanf(argv[argi], "%u", &g_sleep))
+			continue;
+
+		fprintf(stderr, "usage: %s [opt..]\n"
+			"\t%s u32\t: sleep u32 seconds before launching the workload\n",
+			argv[0], arg_sleep);
+		return -1;
+	}
+
 #if __APPLE__
 	qos_class_t qosClass = qos_class_self();
 	fprintf(stdout, "main qos: %s\n", qos_to_str(qosClass));
