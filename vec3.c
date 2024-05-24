@@ -11,19 +11,19 @@
 #include <string.h>
 
 #if _M_ARM64
-#define VC_EXTRALEAN
-#define WIN32_LEAN_AND_MEAN
+	#define VC_EXTRALEAN
+	#define WIN32_LEAN_AND_MEAN
 
-#include <windows.h>
-#include <synchapi.h>
+	#include <windows.h>
+	#include <synchapi.h>
 
-#define sleep(n)	Sleep(1000 * (n))
+	#define sleep(n) Sleep(1000 * (n))
 #else
-#include <unistd.h>
+	#include <unistd.h>
 #endif
 
 #if __APPLE__
-#include <pthread.h>
+	#include <pthread.h>
 #endif
 
 typedef struct _matx3 {
